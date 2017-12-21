@@ -2,9 +2,12 @@
  * el 画布元素
  * ctx 画布context
  * statusEl 状态元素
+ * resultEl 游戏结束提示元素
  * player 当前玩家，true白棋，false黑棋
  * firstInit 是否初次渲染
  * waiting 是否游戏已结束，等待初始化
+ * process 游戏过程
+ * lastImg 上一个画布（用于清除s当前棋子的提示）
  * rowNum 行格子数量
  * colNum 列格子数量
  * row 行长度
@@ -13,13 +16,16 @@
  * chessmanSize 棋子大小
  */
 class GAME {
-    constructor(canvasSelector, statusSelector) {
+    constructor(canvasSelector, statusSelector, resultSelector) {
         this.el = document.querySelector(canvasSelector);
         this.ctx = this.el.getContext('2d');
         this.statusEl = document.querySelector(statusSelector);
+        this.resultEl = document.querySelector(resultSelector);
         this.player = false;
         this.firstInit = true; // 是否第一次初始化
         this.waiting = false;
+        this.process = [];
+        this.lastImg = null;
     }
     /**
      * 初始化棋盘
@@ -55,8 +61,8 @@ class GAME {
         // 画背景
         this.ctx.fillStyle = "#FFF";
         this.ctx.fillRect(0, 0, row, col);
-        // 画先跳
-        this.ctx.fillStyle = "#FF0000";
+        // 画线条
+        this.ctx.strokeStyle = "#000";
         this.ctx.beginPath();
         let i = 1;
         while (i < rowNum) {
@@ -75,6 +81,10 @@ class GAME {
             this.firstInit = false;
             this.bindEvent();
         }
+        this.statusEl.innerText = '';
+        this.waiting = false;
+        this.player = false;
+        this.process = [];
     }
     /**
      * 创建棋子
@@ -86,11 +96,40 @@ class GAME {
         this.ctx.beginPath();
         this.ctx.arc(station[0], station[1], this.chessmanSize, 0, 2 * Math.PI);
         this.ctx.fill();
-        this.ctx.fillStyle = '#000';
+        this.ctx.strokeStyle = '#000';
         this.ctx.beginPath();
         this.ctx.arc(station[0], station[1], this.chessmanSize, 0, 2 * Math.PI);
         this.ctx.stroke();
         this.ctx.closePath();
+    }
+
+    /**
+     * 创建最后一次下的棋子是哪个的提示
+     * @param  {Array} station [横坐标, 纵坐标]
+     * @param  {Boolean} isClear 是否为清除操作
+     */
+    createCurrentTip(station, isClear) {
+        let length = this.chessmanSize / 2;
+        this.ctx.strokeStyle = isClear ? '#fff' : '#f75000';
+        this.ctx.lineJoin = 'miter';
+        this.ctx.beginPath();
+        // 左上角
+        this.ctx.moveTo(station[0] - this.chessmanSize + length, station[1] - this.chessmanSize);
+        this.ctx.lineTo(station[0] - this.chessmanSize, station[1] - this.chessmanSize);
+        this.ctx.lineTo(station[0] - this.chessmanSize, station[1] - this.chessmanSize + length);
+        // 左下角
+        this.ctx.moveTo(station[0] - this.chessmanSize, station[1] + this.chessmanSize - length);
+        this.ctx.lineTo(station[0] - this.chessmanSize, station[1] + this.chessmanSize);
+        this.ctx.lineTo(station[0] - this.chessmanSize + length, station[1] + this.chessmanSize);
+        // 右下角
+        this.ctx.moveTo(station[0] + this.chessmanSize - length, station[1] + this.chessmanSize);
+        this.ctx.lineTo(station[0] + this.chessmanSize, station[1] + this.chessmanSize);
+        this.ctx.lineTo(station[0] + this.chessmanSize, station[1] + this.chessmanSize - length);
+        // 右上角
+        this.ctx.moveTo(station[0] + this.chessmanSize, station[1] - this.chessmanSize + length);
+        this.ctx.lineTo(station[0] + this.chessmanSize, station[1] - this.chessmanSize);
+        this.ctx.lineTo(station[0] + this.chessmanSize - length, station[1] - this.chessmanSize);
+        this.ctx.stroke();
     }
 
     /**
@@ -251,6 +290,8 @@ class GAME {
         }*/
     }
 
+
+
     /**
      * 绑定事件（下棋用）
      * @return {[type]} [description]
@@ -276,25 +317,32 @@ class GAME {
                 xCount < this.rowNum &&
                 yCount < this.colNum &&
                 this.status[xCount - 1][yCount - 1] === null) {
+                if (this.process.length) {
+                    this.ctx.putImageData(this.lastImg, 0, 0);
+                }
                 this.createChessman(this.player, [this.chessGrid * xCount, this.chessGrid * yCount]);
+                this.lastImg = this.ctx.getImageData(0, 0, this.el.width, this.el.height)
+                this.createCurrentTip([this.chessGrid * xCount, this.chessGrid * yCount]);
                 this.status[xCount - 1][yCount - 1] = this.player;
                 this.statusEl.innerHTML += (this.player ? '白棋' : '黑棋') + '走：(' + xCount + ',' + yCount + ')<br/>';
+                this.process.push([xCount, yCount]);
                 // 判断游戏是否结束
                 if (this.judgeGameOver(xCount - 1, yCount - 1, 1) ||
                     this.judgeGameOver(xCount - 1, yCount - 1, 2) ||
                     this.judgeGameOver(xCount - 1, yCount - 1, 3) ||
                     this.judgeGameOver(xCount - 1, yCount - 1, 4)) {
                     this.statusEl.innerHTML += (this.player ? '白棋' : '黑棋') + '胜！';
+                    document.querySelector('#result').style.display = 'block';
+                    this.resultEl.innerText = (this.player ? '白棋' : '黑棋') + '胜！';
                     this.waiting = true;
-                    setTimeout(() => {
-                        this.statusEl.innerText = '';
-                        this.init(this.rowNum, this.colNum, this.row, this.col);
-                        this.waiting = false;
-                    }, 3000)
+                    // setTimeout(() => {
+                        // this.init(this.rowNum, this.colNum, this.row, this.col);
+                    // }, 3000)
+                } else {
+                    this.player = !this.player;
                 }
-                this.player = !this.player;
             }
-        })
+        });
     }
 }
 export { GAME };
