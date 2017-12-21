@@ -1,0 +1,26 @@
+{
+  "name": "game",
+  "version": "1.0.0",
+  "description": "a canvas game",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "scripts": {
+    "dev": "webpack-dev-server --open --hot",
+    "build": "webpack --progress --hide-modules"
+  },
+  "keywords": [
+    "canvas",
+    "game"
+  ],
+  "author": "lfx",
+  "license": "ISC",
+  "devDependencies": {
+    "babel-core": "^6.26.0",
+    "babel-loader": "^7.1.2",
+    "babel-preset-env": "^1.6.1",
+    "webpack": "^3.10.0",
+    "webpack-dev-server": "^2.9.7"
+  }
+}
