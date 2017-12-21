@@ -186,9 +186,6 @@ class GAME {
                         break;
                     }
                 }
-                if (count == 5 || (flagL && flagR && count == 4)) {
-                    return true;
-                }
                 break;
             case 2:
                 for (let i = 1; i <= 4; i++) {
@@ -212,9 +209,6 @@ class GAME {
                     } else {
                         break;
                     }
-                }
-                if (count == 5 || (flagL && flagR && count == 4)) {
-                    return true;
                 }
                 break;
             case 3:
@@ -240,9 +234,6 @@ class GAME {
                         break;
                     }
                 }
-                if (count == 5 || (flagL && flagR && count == 4)) {
-                    return true;
-                }
                 break;
             case 4:
                 for (let i = 1; i <= 4; i++) {
@@ -267,10 +258,11 @@ class GAME {
                         break;
                     }
                 }
-                if (count == 5 || (flagL && flagR && count == 4)) {
-                    return true;
-                }
                 break;
+        }
+        //  || (flagL && flagR && count == 4)
+        if (count == 5) {
+            return true;
         }
         /*// 判断横
         if (this.checkIfChess(x - 1, y) || this.checkIfChess(x + 1, y)) {
@@ -336,7 +328,7 @@ class GAME {
                     this.resultEl.innerText = (this.player ? '白棋' : '黑棋') + '胜！';
                     this.waiting = true;
                     // setTimeout(() => {
-                        // this.init(this.rowNum, this.colNum, this.row, this.col);
+                    // this.init(this.rowNum, this.colNum, this.row, this.col);
                     // }, 3000)
                 } else {
                     this.player = !this.player;
