@@ -4,9 +4,6 @@
   "description": "a canvas game",
   "main": "index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
-  },
-  "scripts": {
     "dev": "webpack-dev-server --open --hot",
     "build": "webpack --progress --hide-modules"
   },
@@ -22,5 +19,9 @@
     "babel-preset-env": "^1.6.1",
     "webpack": "^3.10.0",
     "webpack-dev-server": "^2.9.7"
+  },
+  "dependencies": {
+    "stats.js": "^0.17.0",
+    "three.js": "^0.77.1"
   }
 }

@@ -337,4 +337,4 @@ class GAME {
         });
     }
 }
-export { GAME };
+export default GAME;
