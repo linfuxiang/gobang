@@ -1,6 +1,7 @@
 import THREE from 'three.js'
 import OrbitControls from 'three-orbit-controls'
 import Stats from 'stats.js'
+import './main.css'
 const orbitControls = OrbitControls(THREE);
 // import init from './game_three.js'
 // window.onload = init;
