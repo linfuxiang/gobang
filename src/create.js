@@ -5,19 +5,20 @@ import OrbitControls from 'three-orbit-controls'
 const orbitControls = OrbitControls(THREE);
 class GAME {
     constructor() {
-        this.stat = null;
-        this.renderer = null;
+        this.stat = null;   // 性能监听器
+
+        // 场景、相机、渲染器
         this.scene = null;
         this.camera = null;
+        this.renderer = null;
+
+        // 额外元素
         this.light = null;
         this.controls = null;
         this.clock = null;
         this.raycaster = null;
         this.mouse = null;
         this.platform = null;
-
-        this.player = false;
-        this.status = [];
     }
     // 设置性能监听器
     setStats() {
@@ -29,6 +30,7 @@ class GAME {
         document.body.appendChild(this.stat.domElement);
     }
     init() {
+        // 设置性能监听器
         this.setStats();
         // 渲染器
         this.renderer = new THREE.WebGLRenderer();
@@ -96,123 +98,6 @@ class GAME {
         material.opacity = 0;
         this.tipBox = new THREE.Mesh(geometry, material);
         this.scene.add(this.tipBox);
-    }
-    judgeGameOver(x, y, way) {
-        let count = 1;
-        let flagL = false,
-            flagR = false;
-        switch (way) {
-            case 1:
-                for (let i = 1; i <= 4; i++) {
-                    let res = this.checkIfChess(x - i, y);
-                    if (res === this.player) {
-                        count++;
-                    } else if (res === null) {
-                        flagL = true;
-                        break;
-                    } else {
-                        break;
-                    }
-                }
-                for (let i = 1; i <= 4; i++) {
-                    let res = this.checkIfChess(x + i, y);
-                    if (res === this.player) {
-                        count++;
-                    } else if (res === null) {
-                        flagR = true;
-                        break;
-                    } else {
-                        break;
-                    }
-                }
-                break;
-            case 2:
-                for (let i = 1; i <= 4; i++) {
-                    let res = this.checkIfChess(x, y - i);
-                    if (res === this.player) {
-                        count++;
-                    } else if (res === null) {
-                        flagL = true;
-                        break;
-                    } else {
-                        break;
-                    }
-                }
-                for (let i = 1; i <= 4; i++) {
-                    let res = this.checkIfChess(x, y + i);
-                    if (res === this.player) {
-                        count++;
-                    } else if (res === null) {
-                        flagR = true;
-                        break;
-                    } else {
-                        break;
-                    }
-                }
-                break;
-            case 3:
-                for (let i = 1; i <= 4; i++) {
-                    let res = this.checkIfChess(x - i, y - i);
-                    if (res === this.player) {
-                        count++;
-                    } else if (res === null) {
-                        flagL = true;
-                        break;
-                    } else {
-                        break;
-                    }
-                }
-                for (let i = 1; i <= 4; i++) {
-                    let res = this.checkIfChess(x + i, y + i);
-                    if (res === this.player) {
-                        count++;
-                    } else if (res === null) {
-                        flagR = true;
-                        break;
-                    } else {
-                        break;
-                    }
-                }
-                break;
-            case 4:
-                for (let i = 1; i <= 4; i++) {
-                    let res = this.checkIfChess(x + i, y - i);
-                    if (res === this.player) {
-                        count++;
-                    } else if (res === null) {
-                        flagL = true;
-                        break;
-                    } else {
-                        break;
-                    }
-                }
-                for (let i = 1; i <= 4; i++) {
-                    let res = this.checkIfChess(x - i, y + i);
-                    if (res === this.player) {
-                        count++;
-                    } else if (res === null) {
-                        flagR = true;
-                        break;
-                    } else {
-                        break;
-                    }
-                }
-                break;
-        }
-        //  || (flagL && flagR && count == 4)
-        if (count == 5) {
-            return true;
-        }
-    }
-    initChess(statusSelector, resultSelector) {
-        this.statusEl = document.querySelector(statusSelector);
-        this.resultEl = document.querySelector(resultSelector);
-        for (let i = 0; i < 25; i++) {
-            this.status[i] = [];
-            for (let j = 0; j < 25; j++) {
-                this.status[i][j] = null;
-            }
-        }
     }
     // 碰触物体
     createCollision() {
@@ -296,7 +181,6 @@ class GAME {
     createCamera() {
         this.camera = new THREE.PerspectiveCamera(45, this.renderer.domElement.width / this.renderer.domElement.height, 0.1, 1000);
         this.camera.position.set(30, 40, 30);
-        // this.camera.position.set(0, 0, 50);
         this.camera.lookAt(new THREE.Vector3(0, 0, 0));
         // this.camera.lookAt(this.scene.position);
         // this.scene.add(this.camera);
