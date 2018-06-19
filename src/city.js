@@ -1,11 +1,11 @@
-import THREE from 'three.js'
+import * as THREE from 'three'
 import Stats from 'stats.js'
 import OrbitControls from 'three-orbit-controls'
 
 const orbitControls = OrbitControls(THREE);
 class GAME {
     constructor() {
-        this.stat = null;   // 性能监听器
+        this.stat = null; // 性能监听器
 
         // 场景、相机、渲染器
         this.scene = null;
@@ -20,6 +20,7 @@ class GAME {
         this.mouse = null;
         this.platform = null;
     }
+
     // 设置性能监听器
     setStats() {
         this.stat = new Stats();
@@ -29,48 +30,203 @@ class GAME {
         this.stat.domElement.style.top = '0px';
         document.body.appendChild(this.stat.domElement);
     }
-    init() {
-        // 设置性能监听器
-        this.setStats();
-        // 渲染器
-        this.renderer = new THREE.WebGLRenderer();
-        this.renderer.setSize(window.innerWidth, window.innerHeight);
-        document.body.appendChild(this.renderer.domElement);
-        this.renderer.setClearColor(0xeeeeee);
-        this.renderer.shadowMap.enabled = true;
 
-        this.createScene();
-        this.createCamera();
-
-        this.controls = new orbitControls(this.camera);
-        // this.controls.autoRotate = true;
-        this.clock = new THREE.Clock();
-
-        this.createLight();
-        // this.createAxes();
-        this.createPlatform();
-        // this.createCube();
-        this.createCollision();
-        // this.initChess('#status', '.result');
-        this.createCurrentTip();
-        this.render();
-
-        document.querySelector('#result button').addEventListener('click', () => {
-            for (let i = 0; i < 25; i++) {
-                this.status[i] = [];
-                for (let j = 0; j < 25; j++) {
-                    this.status[i][j] = null;
-                }
-            }
-            this.scene.children.forEach((item, index) => {
-                if (item.geometry && item.geometry instanceof THREE.SphereGeometry) {
-                    item.material.opacity = 0;
-                }
-            });
-            this.tipBox.material.opacity = 0;
-            document.querySelector('#result').style.display = 'none';
-        });
+    // 创建场景
+    createScene() {
+        this.scene = new THREE.Scene();
     }
+    // 创建相机
+    createCamera() {
+        // 透视相机
+        this.camera = new THREE.PerspectiveCamera(
+            45, // 视场角度
+            this.renderer.domElement.width / this.renderer.domElement.height, // 长宽比
+            0.1,
+            10000
+        );
+        // 正投影相机
+        // this.camera = new THREE.OrthographicCamera(
+        //     -100,
+        //     100,
+        //     -100,
+        //     100,
+        //     0.1,
+        //     10000
+        // );
+        this.camera.position.set(100, 100, 100);
+        this.camera.lookAt(new THREE.Vector3(0, 0, 0));
+    }
+
+    // 创建灯光
+    createLight() {
+        // 创建环境光
+        // this.scene.add(new THREE.AmbientLight('#111111'));
+
+        // let hemiLight = new THREE.HemisphereLight(0x0000ff, 0x00ff00, 0.6);
+        // hemiLight.position.set(0, 500, 0);
+        // hemiLight.visible = false;
+        // this.scene.add(hemiLight);
+
+        // 创建太阳光
+        this.light = new THREE.DirectionalLight('#ffffff');
+        this.light.position.set(-50, 80, -30);
+        this.light.castShadow = true;
+        this.light.shadow.camera.near = 2;
+        this.light.shadow.camera.far = 3000;
+        this.light.shadow.camera.left = -500;
+        this.light.shadow.camera.right = 500;
+        this.light.shadow.camera.top = 500;
+        this.light.shadow.camera.bottom = -500;
+
+        this.light.distance = 0;
+        this.light.intensity = 0.8;
+        this.light.shadow.mapSize.height = 1024;
+        this.light.shadow.mapSize.width = 1024;
+
+        this.scene.add(this.light);
+    }
+
+    // 创建路面和地基
+    createPlatform() {
+        // 创建路面
+        this.platform = new THREE.Mesh(
+            new THREE.PlaneGeometry(520, 520),
+            new THREE.MeshLambertMaterial({
+                color: 0x4A4A4A,
+                emissive: 0x4A4A4A,
+            })
+        );
+        this.platform.name = 'platform';
+        this.platform.rotation.x = -0.5 * Math.PI;
+        this.platform.receiveShadow = true;
+
+        this.scene.add(this.platform);
+
+        // 创建地基
+        for (let i = 1; i <= 5; i++) {
+            for (let j = 1; j <= 5; j++) {
+                let groundWork = new THREE.Mesh(
+                    new THREE.CubeGeometry(80, 2, 80),
+                    new THREE.MeshLambertMaterial({
+                        color: 0xF4F4F4,
+                        emissive: 0xE0E0E0,
+                    })
+                );
+                groundWork.name = `groundWork-${i}-${j}`;
+                groundWork.position.x = -260 + i * (20 + 40) + (i - 1) * 40;
+                groundWork.position.y = 1;
+                groundWork.position.z = -260 + j * (20 + 40) + (j - 1) * 40;
+                groundWork.castShadow = true;
+                groundWork.receiveShadow = true;
+                this.scene.add(groundWork);
+            }
+        }
+    }
+
+    // 创建房屋
+    createHouse() {
+        for (let i = 1; i <= 5; i++) {
+            for (let j = 1; j <= 5; j++) {
+                let randomHeight = Math.floor(60 * Math.random() + 30);
+                let house = new THREE.Mesh(
+                    new THREE.CubeGeometry(60, randomHeight, 60),
+                    new THREE.MeshLambertMaterial({
+                        color: 0xF4A460,
+                        emissive: 0xF4A460,
+                    })
+                );
+                house.name = `house-${i}-${j}`;
+                house.position.x = -260 + i * (20 + 40) + (i - 1) * 40;
+                house.position.y = randomHeight / 2 + 2;
+                house.position.z = -260 + j * (20 + 40) + (j - 1) * 40;
+                house.castShadow = true;
+                house.receiveShadow = true;
+                this.scene.add(house);
+            }
+        }
+    }
+
+    createTrafficLine() {
+        return;
+        let line = new THREE.Mesh(
+            new THREE.PlaneGeometry(2, 15),
+            new THREE.MeshLambertMaterial({
+                color: 0xE0E0E0,
+                emissive: 0xE0E0E0,
+            })
+        );
+        line.name = 'platform';
+        line.rotation.x = -0.5 * Math.PI;
+        line.position.x = 50;
+        line.position.y = 0.1;
+        line.receiveShadow = true;
+
+        this.scene.add(line);
+    }
+
+    createCar() {
+        let material = new THREE.MeshPhongMaterial({
+            color: 0xF4A460,
+            // emissive: 0xF4A460,
+            specular: 0xF4A460,
+            shininess: 500,
+        });
+        // 初始化几何形状
+        let carTopGeometry = new THREE.Geometry();
+
+        // 设置顶点位置
+        // 顶部4顶点
+        carTopGeometry.vertices.push(new THREE.Vector3(-1, 2, -1));
+        carTopGeometry.vertices.push(new THREE.Vector3(1, 2, -1));
+        carTopGeometry.vertices.push(new THREE.Vector3(1, 2, 1));
+        carTopGeometry.vertices.push(new THREE.Vector3(-1, 2, 1));
+        // 底部4顶点
+        carTopGeometry.vertices.push(new THREE.Vector3(-2, 0, -2));
+        carTopGeometry.vertices.push(new THREE.Vector3(2, 0, -2));
+        carTopGeometry.vertices.push(new THREE.Vector3(2, 0, 2));
+        carTopGeometry.vertices.push(new THREE.Vector3(-2, 0, 2));
+
+        // 设置顶点连接情况
+        // 顶面
+        carTopGeometry.faces.push(new THREE.Face3(0, 1, 3));
+        carTopGeometry.faces.push(new THREE.Face3(1, 2, 3));
+        // 底面
+        carTopGeometry.faces.push(new THREE.Face3(4, 5, 6));
+        carTopGeometry.faces.push(new THREE.Face3(5, 6, 7));
+        // 四个侧面
+        carTopGeometry.faces.push(new THREE.Face3(1, 5, 6));
+        carTopGeometry.faces.push(new THREE.Face3(6, 2, 1));
+        carTopGeometry.faces.push(new THREE.Face3(2, 6, 7));
+        carTopGeometry.faces.push(new THREE.Face3(7, 3, 2));
+        carTopGeometry.faces.push(new THREE.Face3(3, 7, 0));
+        carTopGeometry.faces.push(new THREE.Face3(7, 4, 0));
+        carTopGeometry.faces.push(new THREE.Face3(0, 4, 5));
+        carTopGeometry.faces.push(new THREE.Face3(0, 5, 1));
+
+        let carTop = new THREE.Mesh(
+            carTopGeometry,
+            material
+        );
+        carTop.position.y = 1;
+        let carBottom = new THREE.Mesh(
+            new THREE.CubeGeometry(5, 2, 10),
+            material
+        );
+        // let car = new THREE.Object3D();
+        // car.name = 'car';
+        // car.add(carTop);
+        // car.add(carBottom);
+        carTop.position.y = 3;
+        carTop.position.x = 40;
+
+        this.scene.add(carTop);
+        // this.scene.add(new THREE.Mesh(
+        //     new THREE.PolyhedronGeometry(vertices, faces, 10, 0),
+        //     material
+        // ));
+
+    }
+
     render() {
         this.stat.update();
         let delta = this.clock.getDelta();
@@ -78,6 +234,7 @@ class GAME {
         requestAnimationFrame(this.render.bind(this));
         this.renderer.render(this.scene, this.camera);
     }
+
     createCurrentTip() {
         // let length = this.chessmanSize / 2;
         // this.ctx.strokeStyle = isClear ? '#fff' : '#f75000';
@@ -164,64 +321,79 @@ class GAME {
             }
         });
     }
-    // 场景
-    createScene() {
-        this.scene = new THREE.Scene();
-    }
-    // 相机
-    createCamera() {
-        this.camera = new THREE.PerspectiveCamera(45, this.renderer.domElement.width / this.renderer.domElement.height, 0.1, 1000);
-        this.camera.position.set(30, 40, 300);
-        this.camera.lookAt(new THREE.Vector3(0, 0, 0));
-        // this.camera.lookAt(this.scene.position);
-        // this.scene.add(this.camera);
-    }
-    // 灯光
-    createLight() {
-        // this.light = new THREE.AmbientLight(0x0c0c0c);
-        // this.light = new THREE.PointLight(0xccffcc);
-        // this.light = new THREE.DirectionalLight(0xccffcc);
-        this.light = new THREE.SpotLight(0xffffff);
-        this.light.position.set(-40, 60, -10);
-        this.light.castShadow = true;
-        // this.light.intensity = 0.5;
-        this.scene.add(this.light);
-    }
+
     // 坐标轴
     createAxes() {
-        let axes = new THREE.AxisHelper(20);
+        let axes = new THREE.AxesHelper(20);
         this.scene.add(axes);
     }
-    // 平台
-    createPlatform() {
-        this.platform = new THREE.Mesh(
-            new THREE.CubeGeometry(250, 1, 250),
-            new THREE.MeshLambertMaterial({
-                color: 0xEE7942,
-                emissive: 0xEE7942
-            })
-        );
-        this.platform.name = 'platform';
-        this.platform.position.y = -0.6;
 
-        this.scene.add(this.platform);
+    bindEventListener() {
+
     }
 
-    createCubeTest(x, y) {
-        // 画物体
-        // let geometry = new THREE.CubeGeometry(0.6, 0.2, 0.6);
-        let geometry = new THREE.SphereGeometry(1, 16, 16);
-        let material = new THREE.MeshLambertMaterial({
-            color: 0x000000,
-            emissive: 0x000000,
+    init() {
+        // 设置性能监听器
+        this.setStats();
+        // 渲染器
+        this.renderer = new THREE.WebGLRenderer();
+        this.renderer.setSize(window.innerWidth, window.innerHeight);
+        this.renderer.setClearColor(0xeeeeee);
+        this.renderer.shadowMap.enabled = true;
+        // this.renderer.shadowMap.soft = true;
+        document.body.appendChild(this.renderer.domElement);
+
+        this.createScene();
+        this.createCamera();
+
+        this.controls = new orbitControls(this.camera);
+        // this.controls.autoRotate = true;
+        this.clock = new THREE.Clock();
+
+        this.createLight();
+        // this.createAxes();
+        this.createPlatform();
+        this.createHouse();
+        this.createTrafficLine();
+        this.createCar();
+        this.createCollision();
+        this.createCurrentTip();
+
+        // this.scene.fog = new THREE.Fog(0xffffff, 0.15, 300);
+        // this.scene.fog = new THREE.FogExp2(0xffffff, 0.15);
+
+        this.render();
+
+        document.querySelector('#result button').addEventListener('click', () => {
+            for (let i = 0; i < 25; i++) {
+                this.status[i] = [];
+                for (let j = 0; j < 25; j++) {
+                    this.status[i][j] = null;
+                }
+            }
+            this.scene.children.forEach((item, index) => {
+                if (item.geometry && item.geometry instanceof THREE.SphereGeometry) {
+                    item.material.opacity = 0;
+                }
+            });
+            this.tipBox.material.opacity = 0;
+            document.querySelector('#result').style.display = 'none';
         });
-        let chess = new THREE.Mesh(geometry, material);
-        chess.position.x = x;
-        chess.position.y = y;
-        chess.position.z = 0;
-        // chess.visible = i % 3 == 0 ? true : false;
-        this.scene.add(chess);
     }
 }
 
 export default GAME;
+
+function createMesh(geom) {
+
+    // assign two materials
+    var meshMaterial = new THREE.MeshNormalMaterial();
+    meshMaterial.side = THREE.DoubleSide;
+    var wireFrameMat = new THREE.MeshBasicMaterial();
+    wireFrameMat.wireframe = true;
+
+    // create a multimaterial
+    var mesh = THREE.SceneUtils.createMultiMaterialObject(geom, [meshMaterial, wireFrameMat]);
+
+    return mesh;
+}

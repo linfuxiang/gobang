@@ -1,4 +1,4 @@
-import THREE from 'three.js'
+import THREE from 'three'
 import Stats from 'stats.js'
 import OrbitControls from 'three-orbit-controls'
 
