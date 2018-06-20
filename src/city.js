@@ -5,7 +5,7 @@ import OrbitControls from 'three-orbit-controls'
 const orbitControls = OrbitControls(THREE);
 class GAME {
     constructor() {
-        this.stat = null; // 性能监听器
+        this.stats = null; // 性能监听器
 
         // 场景、相机、渲染器
         this.scene = null;
@@ -19,16 +19,22 @@ class GAME {
         this.raycaster = null;
         this.mouse = null;
         this.platform = null;
+
+        // 车
+        this.car = null;
+        this.head = 0;
+        this.count = 0;
+        this.position = {};
     }
 
     // 设置性能监听器
     setStats() {
-        this.stat = new Stats();
-        this.stat.domElement.style.position = 'absolute';
-        this.stat.domElement.style.left = '';
-        this.stat.domElement.style.right = '0px';
-        this.stat.domElement.style.top = '0px';
-        document.body.appendChild(this.stat.domElement);
+        this.stats = new Stats();
+        this.stats.domElement.style.position = 'absolute';
+        this.stats.domElement.style.left = '';
+        this.stats.domElement.style.right = '0px';
+        this.stats.domElement.style.top = '0px';
+        document.body.appendChild(this.stats.domElement);
     }
 
     // 创建场景
@@ -155,7 +161,7 @@ class GAME {
                 emissive: 0xE0E0E0,
             })
         );
-        line.name = 'platform';
+        line.name = 'trafficLine-';
         line.rotation.x = -0.5 * Math.PI;
         line.position.x = 50;
         line.position.y = 0.1;
@@ -164,62 +170,63 @@ class GAME {
         this.scene.add(line);
     }
 
-    createCar() {
+    createCar(id) {
         let material = new THREE.MeshPhongMaterial({
-            color: 0xF4A460,
-            // emissive: 0xF4A460,
-            specular: 0xF4A460,
+            color: 0xFF0000,
+            // emissive: 0xFF0000,
+            specular: 0xFF0000,
             shininess: 500,
         });
-        // 初始化几何形状
+
+        // 创建自定义几何体
         let carTopGeometry = new THREE.Geometry();
-
-        // 设置顶点位置
-        // 顶部4顶点
-        carTopGeometry.vertices.push(new THREE.Vector3(-1, 2, -1));
-        carTopGeometry.vertices.push(new THREE.Vector3(1, 2, -1));
-        carTopGeometry.vertices.push(new THREE.Vector3(1, 2, 1));
-        carTopGeometry.vertices.push(new THREE.Vector3(-1, 2, 1));
-        // 底部4顶点
-        carTopGeometry.vertices.push(new THREE.Vector3(-2, 0, -2));
-        carTopGeometry.vertices.push(new THREE.Vector3(2, 0, -2));
-        carTopGeometry.vertices.push(new THREE.Vector3(2, 0, 2));
-        carTopGeometry.vertices.push(new THREE.Vector3(-2, 0, 2));
-
-        // 设置顶点连接情况
-        // 顶面
-        carTopGeometry.faces.push(new THREE.Face3(0, 1, 3));
-        carTopGeometry.faces.push(new THREE.Face3(1, 2, 3));
-        // 底面
-        carTopGeometry.faces.push(new THREE.Face3(4, 5, 6));
-        carTopGeometry.faces.push(new THREE.Face3(5, 6, 7));
-        // 四个侧面
-        carTopGeometry.faces.push(new THREE.Face3(1, 5, 6));
-        carTopGeometry.faces.push(new THREE.Face3(6, 2, 1));
-        carTopGeometry.faces.push(new THREE.Face3(2, 6, 7));
-        carTopGeometry.faces.push(new THREE.Face3(7, 3, 2));
-        carTopGeometry.faces.push(new THREE.Face3(3, 7, 0));
-        carTopGeometry.faces.push(new THREE.Face3(7, 4, 0));
-        carTopGeometry.faces.push(new THREE.Face3(0, 4, 5));
-        carTopGeometry.faces.push(new THREE.Face3(0, 5, 1));
-
+        let vertices = [
+            new THREE.Vector3(1, 1, 1),
+            new THREE.Vector3(1, 1, -1),
+            new THREE.Vector3(2, -1, 3),
+            new THREE.Vector3(2, -1, -3),
+            new THREE.Vector3(-1, 1, -1),
+            new THREE.Vector3(-1, 1, 1),
+            new THREE.Vector3(-2, -1, -3),
+            new THREE.Vector3(-2, -1, 3)
+        ];
+        let faces = [
+            new THREE.Face3(0, 2, 1),
+            new THREE.Face3(2, 3, 1),
+            new THREE.Face3(4, 6, 5),
+            new THREE.Face3(6, 7, 5),
+            new THREE.Face3(4, 5, 1),
+            new THREE.Face3(5, 0, 1),
+            new THREE.Face3(7, 6, 2),
+            new THREE.Face3(6, 3, 2),
+            new THREE.Face3(5, 7, 0),
+            new THREE.Face3(7, 2, 0),
+            new THREE.Face3(1, 3, 4),
+            new THREE.Face3(3, 6, 4),
+        ];
+        carTopGeometry.vertices = vertices;
+        carTopGeometry.faces = faces;
         let carTop = new THREE.Mesh(
             carTopGeometry,
             material
         );
-        carTop.position.y = 1;
+
+        carTop.position.y = 2;
         let carBottom = new THREE.Mesh(
             new THREE.CubeGeometry(5, 2, 10),
             material
         );
-        // let car = new THREE.Object3D();
-        // car.name = 'car';
-        // car.add(carTop);
-        // car.add(carBottom);
-        carTop.position.y = 3;
-        carTop.position.x = 40;
+        this.car = new THREE.Object3D();
+        this.car.name = `car-${id}`;
+        this.car.add(carTop);
+        this.car.add(carBottom);
+        this.car.position.y = 4;
+        this.car.position.x = 50;
+        this.car.castShadow = true;
 
-        this.scene.add(carTop);
+        this.scene.add(this.car);
+        this.head = 0;
+        this.position = [50, 4, 0];
         // this.scene.add(new THREE.Mesh(
         //     new THREE.PolyhedronGeometry(vertices, faces, 10, 0),
         //     material
@@ -227,8 +234,112 @@ class GAME {
 
     }
 
+    driveCars() {
+        let position = this.car.position;
+
+        switch (this.head) {
+            // 北
+            case 0:
+                this.car.position.z = (+position.z - 0.5).toFixed(1);
+                break;
+                // 东 
+            case 1:
+                this.car.position.x = (+position.x + 0.5).toFixed(1);
+                break;
+                // 南
+            case 2:
+                this.car.position.z = (+position.z + 0.5).toFixed(1);
+                break;
+                // 西
+            case 3:
+                this.car.position.x = (+position.x - 0.5).toFixed(1);
+                break;
+        }
+        let direction = this.solveDircetion();
+        if (this.head != direction) {
+            console.log(this.car.rotation)
+            this.car.rotation.y += 0.5 * Math.PI;
+            this.head = direction;
+        }
+        this.renderer.render(this.scene, this.camera);
+        requestAnimationFrame(this.driveCars.bind(this));
+    }
+
+    solveDircetion() {
+        let border = [-250, -150, -50, 50, 150, 250],
+            position = this.car.position,
+            head = this.head;
+        let checkValue;
+        switch (head) {
+            case 0:
+            case 2:
+                checkValue = +position.z;
+                break;
+            case 1:
+            case 3:
+                checkValue = +position.x;
+                break;
+        }
+        let direction = [];
+        // 到达路口
+        if (~border.indexOf(checkValue)) {
+            // 判断可转方向
+            // 四个对角
+            if (position.x == -250 && position.z == -250) {
+                if (head = 0) {
+                    direction = [1];
+                } else if (head = 3) {
+                    direction = [2];
+                }
+            } else if (position.x == 250 && position.z == -250) {
+                if (head = 0) {
+                    direction = [3];
+                } else if (head = 1) {
+                    direction = [2];
+                }
+            } else if (position.x == -250 && position.z == 250) {
+                if (head = 3) {
+                    direction = [0];
+                } else if (head = 2) {
+                    direction = [1];
+                }
+            } else if (position.x == 250 && position.z == 250) {
+                if (head = 1) {
+                    direction = [0];
+                } else if (head = 2) {
+                    direction = [3];
+                }
+            }
+            // 四个边界
+            if (position.x == -250 && Math.abs(position.z) != 250) {
+                direction = [0, 1, 2];
+                direction.splice([0, 1, 2].indexOf(head == 1 ? 3 : Math.abs(head - 2)), 1);
+            } else if (position.x == 250 && Math.abs(position.z) != 250) {
+                direction = [0, 2, 3];
+                direction.splice([0, 2, 3].indexOf(head == 1 ? 3 : Math.abs(head - 2)), 1);
+            } else if (position.z == -250 && Math.abs(position.x) != 250) {
+                direction = [1, 2, 3];
+                direction.splice([1, 2, 3].indexOf(head == 1 ? 3 : Math.abs(head - 2)), 1);
+            } else if (position.z == 250 && Math.abs(position.x) != 250) {
+                direction = [0, 1, 3];
+                direction.splice([0, 1, 3].indexOf(head == 1 ? 3 : Math.abs(head - 2)), 1);
+            }
+            // 非边界
+            if (Math.abs(position.x) != 250 && Math.abs(position.z) != 250) {
+                direction = [0, 1, 2, 3];
+                direction.splice([0, 1, 2, 3].indexOf(head == 1 ? 3 : Math.abs(head - 2)), 1);
+            }
+            let res = direction[Math.floor(Math.random() * direction.length)];
+            console.log(direction);
+            console.log(head, res)
+            return res;
+        } else {
+            return head;
+        }
+    }
+
     render() {
-        this.stat.update();
+        this.stats.update();
         let delta = this.clock.getDelta();
         this.controls.update(delta);
         requestAnimationFrame(this.render.bind(this));
@@ -293,7 +404,7 @@ class GAME {
                         return +it;
                     });
                     // console.log(position);
-                    if (this.status[position[0]][position[1]] === null) {
+                    if (this.statsus[position[0]][position[1]] === null) {
                         chess[0].object.material.color.setHex(this.player ? 0xffffff : 0x000000);
                         chess[0].object.material.emissive.setHex(this.player ? 0xffffff : 0x000000);
                         this.tipBox.material.opacity = 0.3;
@@ -301,12 +412,12 @@ class GAME {
                         this.tipBox.position.z = position[1] - 12;
                         // console.log(chess[0].object);
                         chess[0].object.material.opacity = 1;
-                        this.status[position[0]][position[1]] = this.player;
+                        this.statsus[position[0]][position[1]] = this.player;
                         if (this.judgeGameOver(position[0], position[1], 1) ||
                             this.judgeGameOver(position[0], position[1], 2) ||
                             this.judgeGameOver(position[0], position[1], 3) ||
                             this.judgeGameOver(position[0], position[1], 4)) {
-                            // this.statusEl.innerHTML += (this.player ? '白棋' : '黑棋') + '胜！';
+                            // this.statsusEl.innerHTML += (this.player ? '白棋' : '黑棋') + '胜！';
                             document.querySelector('#result').style.display = 'block';
                             this.resultEl.innerText = (this.player ? '白棋' : '黑棋') + '胜！';
                             // this.waiting = true;
@@ -355,7 +466,7 @@ class GAME {
         this.createPlatform();
         this.createHouse();
         this.createTrafficLine();
-        this.createCar();
+        this.createCar(0);
         this.createCollision();
         this.createCurrentTip();
 
@@ -363,12 +474,13 @@ class GAME {
         // this.scene.fog = new THREE.FogExp2(0xffffff, 0.15);
 
         this.render();
+        this.driveCars();
 
         document.querySelector('#result button').addEventListener('click', () => {
             for (let i = 0; i < 25; i++) {
-                this.status[i] = [];
+                this.statsus[i] = [];
                 for (let j = 0; j < 25; j++) {
-                    this.status[i][j] = null;
+                    this.statsus[i][j] = null;
                 }
             }
             this.scene.children.forEach((item, index) => {
@@ -383,17 +495,3 @@ class GAME {
 }
 
 export default GAME;
-
-function createMesh(geom) {
-
-    // assign two materials
-    var meshMaterial = new THREE.MeshNormalMaterial();
-    meshMaterial.side = THREE.DoubleSide;
-    var wireFrameMat = new THREE.MeshBasicMaterial();
-    wireFrameMat.wireframe = true;
-
-    // create a multimaterial
-    var mesh = THREE.SceneUtils.createMultiMaterialObject(geom, [meshMaterial, wireFrameMat]);
-
-    return mesh;
-}
