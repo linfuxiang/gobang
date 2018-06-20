@@ -257,7 +257,6 @@ class GAME {
         }
         let direction = this.solveDircetion();
         if (this.head != direction) {
-            console.log(this.car.rotation)
             this.car.rotation.y += 0.5 * Math.PI;
             this.head = direction;
         }
@@ -330,8 +329,8 @@ class GAME {
                 direction.splice([0, 1, 2, 3].indexOf(head == 1 ? 3 : Math.abs(head - 2)), 1);
             }
             let res = direction[Math.floor(Math.random() * direction.length)];
-            console.log(direction);
-            console.log(head, res)
+            // console.log(direction);
+            // console.log(head, res)
             return res;
         } else {
             return head;
