@@ -2,6 +2,11 @@ import * as THREE from 'three'
 import Stats from 'stats.js'
 import OrbitControls from 'three-orbit-controls'
 
+import snow1 from './images/snowflake1.png'
+import snow2 from './images/snowflake2.png'
+import snow3 from './images/snowflake3.png'
+import snow4 from './images/snowflake5.png'
+
 const orbitControls = OrbitControls(THREE);
 class GAME {
     constructor() {
@@ -260,8 +265,6 @@ class GAME {
             this.car.rotation.y += 0.5 * Math.PI;
             this.head = direction;
         }
-        this.renderer.render(this.scene, this.camera);
-        requestAnimationFrame(this.driveCars.bind(this));
     }
 
     solveDircetion() {
@@ -337,26 +340,90 @@ class GAME {
         }
     }
 
+    createSystem(name, texture, size, transparent, opacity, sizeAttenuation, color) {
+        var geom = new THREE.Geometry();
+
+        var color = new THREE.Color(color);
+        color.setHSL(color.getHSL({ h: 0, s: 0, l: 0 }).h,
+            color.getHSL({ h: 0, s: 0, l: 0 }).s,
+            (Math.random()) * color.getHSL({ h: 0, s: 0, l: 0 }).l);
+
+        var material = new THREE.PointsMaterial({
+            size: size,
+            transparent: transparent,
+            opacity: opacity,
+            map: texture,
+            blending: THREE.AdditiveBlending,
+            depthWrite: false,
+            sizeAttenuation: sizeAttenuation,
+            color: color
+        });
+
+        var range = 500;
+        for (var i = 0; i < 2000; i++) {
+            var particle = new THREE.Vector3(
+                Math.random() * range - range / 2,
+                Math.random() * range * 1.5,
+                Math.random() * range - range / 2);
+            particle.velocityY = 0.1 + Math.random() / 5;
+            particle.velocityX = (Math.random() - 0.5) / 3;
+            particle.velocityZ = (Math.random() - 0.5) / 3;
+            geom.vertices.push(particle);
+        }
+
+        let system = new THREE.Points(geom, material);
+        system.name = name;
+        system.sortParticles = true;
+        return system;
+    }
+
+    // size, transparent, opacity, sizeAttenuation, color
+    createParticles() {
+        let size = 3,
+            transparent = true,
+            opacity = 0.3,
+            color = 0xffffff,
+            sizeAttenuation = true;
+        let loader = new THREE.TextureLoader();
+        // let texture1 = loader.load(snow1);
+        let texture2 = loader.load(snow2);
+        // let texture3 = loader.load(snow3);
+        // let texture4 = loader.load(snow4);
+
+        // this.scene.add(this.createSystem('system1', texture1, size, transparent, opacity, sizeAttenuation, color));
+        this.scene.add(this.createSystem('system2', texture2, size, transparent, opacity, sizeAttenuation, color));
+        // this.scene.add(this.createSystem('system3', texture3, size, transparent, opacity, sizeAttenuation, color));
+        // this.scene.add(this.createSystem('system4', texture4, size, transparent, opacity, sizeAttenuation, color));
+    }
+
+    snowFall() {
+        this.scene.children.forEach(function(child) {
+            if (child instanceof THREE.Points) {
+                var vertices = child.geometry.vertices;
+                vertices.forEach(function(v) {
+                    v.y = v.y - (v.velocityY);
+                    v.x = v.x - (v.velocityX);
+                    v.z = v.z - (v.velocityZ);
+
+                    if (v.y <= 0) v.y = 60;
+                    if (v.x <= -20 || v.x >= 20) v.velocityX = v.velocityX * -1;
+                    if (v.z <= -20 || v.z >= 20) v.velocityZ = v.velocityZ * -1;
+                });
+                child.geometry.verticesNeedUpdate = true;
+            }
+        });
+    }
+
     render() {
         this.stats.update();
         let delta = this.clock.getDelta();
         this.controls.update(delta);
+        this.driveCars();
+        this.snowFall();
         requestAnimationFrame(this.render.bind(this));
         this.renderer.render(this.scene, this.camera);
     }
 
-    createCurrentTip() {
-        // let length = this.chessmanSize / 2;
-        // this.ctx.strokeStyle = isClear ? '#fff' : '#f75000';
-        let geometry = new THREE.CubeGeometry(1, 1, 1);
-        let material = new THREE.MeshBasicMaterial({
-            color: 0x9F79EE,
-        });
-        material.transparent = true;
-        material.opacity = 0;
-        this.tipBox = new THREE.Mesh(geometry, material);
-        this.scene.add(this.tipBox);
-    }
     // 碰触物体
     createCollision() {
         this.raycaster = new THREE.Raycaster();
@@ -464,32 +531,30 @@ class GAME {
         // this.createAxes();
         this.createPlatform();
         this.createHouse();
-        this.createTrafficLine();
+        // this.createTrafficLine();
         this.createCar(0);
-        this.createCollision();
-        this.createCurrentTip();
+        this.createParticles();
+        // this.createCollision();
 
-        // this.scene.fog = new THREE.Fog(0xffffff, 0.15, 300);
+        this.scene.fog = new THREE.Fog(0xffffff, 0.3, 500);
         // this.scene.fog = new THREE.FogExp2(0xffffff, 0.15);
 
         this.render();
-        this.driveCars();
-
-        document.querySelector('#result button').addEventListener('click', () => {
-            for (let i = 0; i < 25; i++) {
-                this.statsus[i] = [];
-                for (let j = 0; j < 25; j++) {
-                    this.statsus[i][j] = null;
-                }
-            }
-            this.scene.children.forEach((item, index) => {
-                if (item.geometry && item.geometry instanceof THREE.SphereGeometry) {
-                    item.material.opacity = 0;
-                }
-            });
-            this.tipBox.material.opacity = 0;
-            document.querySelector('#result').style.display = 'none';
-        });
+        // document.querySelector('#result button').addEventListener('click', () => {
+        //     for (let i = 0; i < 25; i++) {
+        //         this.statsus[i] = [];
+        //         for (let j = 0; j < 25; j++) {
+        //             this.statsus[i][j] = null;
+        //         }
+        //     }
+        //     this.scene.children.forEach((item, index) => {
+        //         if (item.geometry && item.geometry instanceof THREE.SphereGeometry) {
+        //             item.material.opacity = 0;
+        //         }
+        //     });
+        //     this.tipBox.material.opacity = 0;
+        //     document.querySelector('#result').style.display = 'none';
+        // });
     }
 }
 
