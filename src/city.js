@@ -42,6 +42,16 @@ class GAME {
         document.body.appendChild(this.stats.domElement);
     }
 
+    // 创建渲染器
+    createRenderer() {
+        // 渲染器
+        this.renderer = new THREE.WebGLRenderer();
+        this.renderer.setSize(window.innerWidth, window.innerHeight);
+        this.renderer.setClearColor(0xeeeeee);
+        this.renderer.shadowMap.enabled = true;
+        // this.renderer.shadowMap.soft = true;
+        document.body.appendChild(this.renderer.domElement);
+    }
     // 创建场景
     createScene() {
         this.scene = new THREE.Scene();
@@ -71,12 +81,12 @@ class GAME {
     // 创建灯光
     createLight() {
         // 创建环境光
-        // this.scene.add(new THREE.AmbientLight('#111111'));
+        this.scene.add(new THREE.AmbientLight('#111111'));
 
-        // let hemiLight = new THREE.HemisphereLight(0x0000ff, 0x00ff00, 0.6);
-        // hemiLight.position.set(0, 500, 0);
-        // hemiLight.visible = false;
-        // this.scene.add(hemiLight);
+        let hemiLight = new THREE.HemisphereLight(0x0000ff, 0x00ff00, 0.6);
+        hemiLight.position.set(0, 500, 0);
+        hemiLight.visible = false;
+        this.scene.add(hemiLight);
 
         // 创建太阳光
         this.light = new THREE.DirectionalLight('#ffffff');
@@ -343,6 +353,7 @@ class GAME {
         }
     }
 
+    // 创建粒子系统（下雪效果）
     createSystem(name, texture, size, transparent, opacity, sizeAttenuation, color) {
         var geom = new THREE.Geometry();
 
@@ -379,8 +390,6 @@ class GAME {
         system.sortParticles = true;
         return system;
     }
-
-    // size, transparent, opacity, sizeAttenuation, color
     createParticles() {
         let size = 3,
             transparent = true,
@@ -398,7 +407,7 @@ class GAME {
         // this.scene.add(this.createSystem('system3', texture3, size, transparent, opacity, sizeAttenuation, color));
         // this.scene.add(this.createSystem('system4', texture4, size, transparent, opacity, sizeAttenuation, color));
     }
-
+    // 飘雪效果
     snowFall() {
         this.scene.children.forEach(function(child) {
             if (child instanceof THREE.Points) {
@@ -427,81 +436,6 @@ class GAME {
         this.renderer.render(this.scene, this.camera);
     }
 
-    // 碰触物体
-    createCollision() {
-        this.raycaster = new THREE.Raycaster();
-        this.mouse = new THREE.Vector2();
-        this.renderer.domElement.addEventListener('mousedown', (event) => {
-            // this.firstTime = new Date().getTime();
-            this.clientX = event.clientX;
-            this.clientY = event.clientY;
-            this.longestDis = 0;
-        });
-        this.renderer.domElement.addEventListener('mousemove', (event) => {
-            // this.firstTime = true;
-            let dis = (event.clientX - this.clientX) ** 2 + (event.clientY - this.clientY) ** 2;
-            this.longestDis = Math.max(dis, this.longestDis);
-        });
-        this.renderer.domElement.addEventListener('mouseup', (event) => {
-            // let lastTime = new Date().getTime();
-            // if ((lastTime - this.firstTime) < 500 && this.longestDis) {
-            if (this.longestDis < 5) {
-                this.mouse.x = (event.clientX / (window.innerWidth)) * 2 - 1;
-                this.mouse.y = -(event.clientY / (window.innerHeight)) * 2 + 1;
-                this.raycaster.setFromCamera(this.mouse, this.camera);
-                let intersects = this.raycaster.intersectObjects(this.scene.children);
-                console.log(intersects);
-                let sphereIdx = false,
-                    platformIdx = false;
-                for (let i = 0; i < intersects.length; i++) {
-                    if (!sphereIdx && intersects[i].object.geometry instanceof THREE.SphereGeometry) {
-                        sphereIdx = i;
-                    }
-                    if (!platformIdx && intersects[i].object.name == 'platform') {
-                        platformIdx = i;
-                    }
-                    if (sphereIdx !== false && platformIdx !== false) {
-                        break;
-                    }
-                }
-                let chess = intersects.filter(function(value) {
-                    return value.object.geometry instanceof THREE.SphereGeometry;
-                });
-                if (sphereIdx !== false && platformIdx !== false && sphereIdx < platformIdx && chess.length == 1) {
-                    // console.log(this.scene.getObjectByName('platform'));
-                    let position = chess[0].object.name.split('-').map((it) => {
-                        return +it;
-                    });
-                    // console.log(position);
-                    if (this.statsus[position[0]][position[1]] === null) {
-                        chess[0].object.material.color.setHex(this.player ? 0xffffff : 0x000000);
-                        chess[0].object.material.emissive.setHex(this.player ? 0xffffff : 0x000000);
-                        this.tipBox.material.opacity = 0.3;
-                        this.tipBox.position.x = position[0] - 12;
-                        this.tipBox.position.z = position[1] - 12;
-                        // console.log(chess[0].object);
-                        chess[0].object.material.opacity = 1;
-                        this.statsus[position[0]][position[1]] = this.player;
-                        if (this.judgeGameOver(position[0], position[1], 1) ||
-                            this.judgeGameOver(position[0], position[1], 2) ||
-                            this.judgeGameOver(position[0], position[1], 3) ||
-                            this.judgeGameOver(position[0], position[1], 4)) {
-                            // this.statsusEl.innerHTML += (this.player ? '白棋' : '黑棋') + '胜！';
-                            document.querySelector('#result').style.display = 'block';
-                            this.resultEl.innerText = (this.player ? '白棋' : '黑棋') + '胜！';
-                            // this.waiting = true;
-                            // setTimeout(() => {
-                            // this.init(this.rowNum, this.colNum, this.row, this.col);
-                            // }, 3000)
-                        } else {
-                            this.player = !this.player;
-                        }
-                    }
-                }
-            }
-        });
-    }
-
     // 坐标轴
     createAxes() {
         let axes = new THREE.AxesHelper(20);
@@ -515,14 +449,8 @@ class GAME {
     init() {
         // 设置性能监听器
         this.setStats();
-        // 渲染器
-        this.renderer = new THREE.WebGLRenderer();
-        this.renderer.setSize(window.innerWidth, window.innerHeight);
-        this.renderer.setClearColor(0xeeeeee);
-        this.renderer.shadowMap.enabled = true;
-        // this.renderer.shadowMap.soft = true;
-        document.body.appendChild(this.renderer.domElement);
-
+        
+        this.createRenderer()
         this.createScene();
         this.createCamera();
 
@@ -537,27 +465,10 @@ class GAME {
         // this.createTrafficLine();
         this.createCar(0);
         this.createParticles();
-        // this.createCollision();
 
-        this.scene.fog = new THREE.Fog(0xffffff, 0.3, 750);
-        // this.scene.fog = new THREE.FogExp2(0xffffff, 0.15);
+        this.scene.fog = new THREE.Fog(0xffffff, 0.3, 600);
 
         this.render();
-        // document.querySelector('#result button').addEventListener('click', () => {
-        //     for (let i = 0; i < 25; i++) {
-        //         this.statsus[i] = [];
-        //         for (let j = 0; j < 25; j++) {
-        //             this.statsus[i][j] = null;
-        //         }
-        //     }
-        //     this.scene.children.forEach((item, index) => {
-        //         if (item.geometry && item.geometry instanceof THREE.SphereGeometry) {
-        //             item.material.opacity = 0;
-        //         }
-        //     });
-        //     this.tipBox.material.opacity = 0;
-        //     document.querySelector('#result').style.display = 'none';
-        // });
     }
 }
 
