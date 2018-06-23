@@ -215,12 +215,15 @@ class GAME {
             carTopGeometry,
             material
         );
-
         carTop.position.y = 2;
+        carTop.castShadow = true;
+
         let carBottom = new THREE.Mesh(
             new THREE.CubeGeometry(5, 2, 10),
             material
         );
+        carBottom.castShadow = true;
+
         this.car = new THREE.Object3D();
         this.car.name = `car-${id}`;
         this.car.add(carTop);
@@ -385,13 +388,13 @@ class GAME {
             color = 0xffffff,
             sizeAttenuation = true;
         let loader = new THREE.TextureLoader();
-        // let texture1 = loader.load(snow1);
-        let texture2 = loader.load(snow2);
+        let texture1 = loader.load(snow1);
+        // let texture2 = loader.load(snow2);
         // let texture3 = loader.load(snow3);
         // let texture4 = loader.load(snow4);
 
-        // this.scene.add(this.createSystem('system1', texture1, size, transparent, opacity, sizeAttenuation, color));
-        this.scene.add(this.createSystem('system2', texture2, size, transparent, opacity, sizeAttenuation, color));
+        this.scene.add(this.createSystem('system1', texture1, size, transparent, opacity, sizeAttenuation, color));
+        // this.scene.add(this.createSystem('system2', texture2, size, transparent, opacity, sizeAttenuation, color));
         // this.scene.add(this.createSystem('system3', texture3, size, transparent, opacity, sizeAttenuation, color));
         // this.scene.add(this.createSystem('system4', texture4, size, transparent, opacity, sizeAttenuation, color));
     }
@@ -536,7 +539,7 @@ class GAME {
         this.createParticles();
         // this.createCollision();
 
-        this.scene.fog = new THREE.Fog(0xffffff, 0.3, 500);
+        this.scene.fog = new THREE.Fog(0xffffff, 0.3, 750);
         // this.scene.fog = new THREE.FogExp2(0xffffff, 0.15);
 
         this.render();
